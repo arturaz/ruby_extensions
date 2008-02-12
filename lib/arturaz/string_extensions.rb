@@ -1,3 +1,16 @@
+class String
+  ALPHANUMERIC = "qwertyuiopasdfghjklzxcvbnm" +
+    "QWERTYUIOPASDFGHJKLZXCVBNM1234567890"
+
+  # Generate random alphanumeric _length_ long string.
+  def self.random(length=8)
+    str = ""
+    an_length = ALPHANUMERIC.length - 1
+    length.times { str += ALPHANUMERIC[rand(an_length)].chr }
+    str
+  end
+end
+
 module Arturaz
   module StringExtensions
     LOWERCASE_LITHUANIAN_LETTERS = ['ą', 'č', 'ę', 'ė', 'į', 'š', 'ų', 'ū', 'ž']
