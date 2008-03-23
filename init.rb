@@ -1,8 +1,8 @@
-require "#{File.dirname(__FILE__)}/lib/arturaz/array_extensions.rb"
-require "#{File.dirname(__FILE__)}/lib/arturaz/string_extensions.rb"
+require "#{File.dirname(__FILE__)}/lib/arturaz/ruby_extensions.rb"
 
 Array.send(:include, Arturaz::ArrayExtensions)
 String.send(:include, Arturaz::StringExtensions)
+Time.send(:include, Arturaz::TimeExtensions)
 
 #String.send(:alias_method, :downcase_without_lithuanian_letters, :downcase)
 #String.send(:alias_method, :downcase, :downcase_with_lithuanian_letters)

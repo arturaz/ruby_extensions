@@ -1,18 +1,28 @@
-class String
-  ALPHANUMERIC = "qwertyuiopasdfghjklzxcvbnm" +
-    "QWERTYUIOPASDFGHJKLZXCVBNM1234567890"
-
-  # Generate random alphanumeric _length_ long string.
-  def self.random(length=8)
-    str = ""
-    an_length = ALPHANUMERIC.length - 1
-    length.times { str += ALPHANUMERIC[rand(an_length)].chr }
-    str
-  end
-end
-
 module Arturaz
-  module StringExtensions
+  module ArrayExtensions # {{{
+    # Returns random member of array.
+    def random
+      self[rand(self.length)]
+    end
+
+    # Returns arithmetical average
+    def average
+      sum = 0.0
+      self.each { |i| sum += i.to_f }
+      if self.length == 0
+        nil
+      else
+        sum / self.length
+      end
+    end
+
+    # Alias for _average_ method.
+    def avg
+      average
+    end
+  end # }}}
+  
+  module StringExtensions # {{{
     LOWERCASE_LITHUANIAN_LETTERS = ['ą', 'č', 'ę', 'ė', 'į', 'š', 'ų', 'ū', 'ž']
     UPPERCASE_LITHUANIAN_LETTERS = ['Ą', 'Č', 'Ę', 'Ė', 'Į', 'Š', 'Ų', 'Ū', 'Ž']
     LOWERCASE_LITHUANIAN_TO_LATIN_LETTERS = ['a', 'c', 'e', 'e', 'i', 's', 'u',
@@ -148,5 +158,30 @@ module Arturaz
         false
       end
     end
+  end # }}}
+
+  module TimeExtensions # {{{
+    LT_MONTHS = %w[sausio vasario kovo balandžio gegužės birželio liepos 
+    rugpjūčio rugsėjo spalio lapkričio gruodžio]
+
+    def to_words(include_seconds=false)
+      str = "%04d m. %s %02d d. %02d:%02d" % [year, LT_MONTHS[month - 1],
+        day, hour, min]
+      str += ":%02d" % sec if include_seconds
+      str
+    end
+  end # }}}
+end    
+
+class String
+  ALPHANUMERIC = "qwertyuiopasdfghjklzxcvbnm" +
+    "QWERTYUIOPASDFGHJKLZXCVBNM1234567890"
+
+  # Generate random alphanumeric _length_ long string.
+  def self.random(length=8)
+    str = ""
+    an_length = ALPHANUMERIC.length - 1
+    length.times { str += ALPHANUMERIC[rand(an_length)].chr }
+    str
   end
 end
