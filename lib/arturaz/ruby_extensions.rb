@@ -164,10 +164,20 @@ module Arturaz
     LT_MONTHS = %w[sausio vasario kovo balandžio gegužės birželio liepos 
     rugpjūčio rugsėjo spalio lapkričio gruodžio]
 
-    def to_words(include_seconds=false)
-      str = "%04d m. %s %02d d. %02d:%02d" % [year, LT_MONTHS[month - 1],
-        day, hour, min]
-      str += ":%02d" % sec if include_seconds
+    # Returns time as word representation.
+    #
+    # options:
+    #   :time - add time?
+    #   :seconds - add seconds?
+    def to_words(options={})
+      options = {:time => true, :seconds => false}.merge(options)
+      
+      str = "%04d m. %s %02d d." % [year, LT_MONTHS[month - 1], day]
+      if options[:time]
+        str += " %02d:%02d" % [hour, min]        
+        str += ":%02d" % sec if options[:seconds]
+      end
+      
       str
     end
   end # }}}
