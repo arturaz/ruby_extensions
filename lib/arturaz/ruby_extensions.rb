@@ -160,6 +160,26 @@ module Arturaz
     end
   end # }}}
 
+  module IntegerExtensions
+    # Returns _self_ as lithuanian string.
+    # 3 arguments used for:
+    # * 1, 21, 31, 41...
+    # * 10..20, 30, 40...
+    # * everything else
+    #
+    # Default prefixes are for minutes
+    def as_lt_words(ones = "minutę", tens = "minučių", plural = "minutes")
+      last = self - (self / 10) * 10
+      if last == 0 || (10..20).include?(self)
+        "%d #{tens}" % self
+      elsif last == 1
+        "%d #{ones}" % self
+      else
+        "%d #{plural}" % self
+      end
+    end
+  end
+  
   module TimeExtensions # {{{
     LT_MONTHS = %w[sausio vasario kovo balandžio gegužės birželio liepos 
     rugpjūčio rugsėjo spalio lapkričio gruodžio]
@@ -189,37 +209,21 @@ module Arturaz
       if passed_by == 0
         return "ką tik"
       elsif passed_by < 60
-        return as_lt_words(passed_by)
+        return "prieš " + passed_by.as_lt_words
       else
         passed_by /= 60
         if passed_by < 60
-          return as_lt_words(passed_by, ["valandą", "valandų", "valandas"])
+          return "prieš " + passed_by.as_lt_words("valandą", "valandų", 
+            "valandas")
         else
           passed_by /= 24
           if passed_by <= 31
-            return as_lt_words(passed_by, ["dieną", "dienų", "dienas"])
+            return "prieš " + passed_by.as_lt_words("dieną", "dienų", "dienas")
           end
         end
       end
       
       to_words :time => true      
-    end
-    
-    # Returns _number_ as lithuanian string.
-    # _prefixes_ is array used for:
-    # * 1, 21, 31, 41...
-    # * 10..20, 30, 40...
-    # * everything else
-    def as_lt_words(number, prefixes=["minutę", "minučių", "minutes"])
-      ones, tens, plural = prefixes
-      last = number - (number / 10) * 10
-      if last == 0 || (10..20).include?(number)
-        "prieš %d #{tens}" % number
-      elsif last == 1
-        "prieš %d #{ones}" % number
-      else
-        "prieš %d #{plural}" % number
-      end
     end
   end # }}}
 end    
