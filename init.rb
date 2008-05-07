@@ -3,6 +3,7 @@ require "#{File.dirname(__FILE__)}/lib/arturaz/ruby_extensions.rb"
 Array.send(:include, Arturaz::ArrayExtensions)
 String.send(:include, Arturaz::StringExtensions)
 Time.send(:include, Arturaz::TimeExtensions::InstanceMethods)
+Time.send(:private, :ago_as_lt_words, :since_as_lt_words)
 Time.extend Arturaz::TimeExtensions::ClassMethods
 Integer.send(:include, Arturaz::IntegerExtensions)
 
