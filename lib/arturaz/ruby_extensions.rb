@@ -179,37 +179,62 @@ module Arturaz
     
     # Return _self_ as lithuanian second string
     def as_lt_seconds(variation=:ago)
-      variation == :ago \
-        ? as_lt_words("sekundę", "sekundžių", "sekundes") \
-        : as_lt_words("sekundės", "sekundžių", "sekundžių")
+      case variation 
+      when :ago
+        as_lt_words("sekundę", "sekundžių", "sekundes")
+      when :noun
+        as_lt_words("sekundė", "sekundžių", "sekundės")
+      when :since
+        as_lt_words("sekundės", "sekundžių", "sekundžių")
+      end
     end
     
     # Return _self_ as lithuanian minute string
     def as_lt_minutes(variation=:ago)
-      variation == :ago \
-        ? as_lt_words("minutę", "minučių", "minutes") \
-        : as_lt_words("minutės", "minučių", "minučių")
+      case variation 
+      when :ago
+        as_lt_words("minutę", "minučių", "minutes")
+      when :noun
+        as_lt_words("minutė", "minučių", "minutės")
+      when :since
+        as_lt_words("minutės", "minučių", "minučių")
+      end
     end
     
     # Return _self_ as lithuanian hour string
     def as_lt_hours(variation=:ago)
-      variation == :ago \
-        ? as_lt_words("valandą", "valandų", "valandas") \
-        : as_lt_words("valandos", "valandų", "valandų")
+      case variation 
+      when :ago
+        as_lt_words("valandą", "valandų", "valandas")
+      when :noun
+        as_lt_words("valanda", "valandų", "valandos")
+      when :since
+        as_lt_words("valandos", "valandų", "valandų")
+      end
     end
     
     # Return _self_ as lithuanian day string
     def as_lt_days(variation=:ago)
-      variation == :ago \
-        ? as_lt_words("dieną", "dienų", "dienas") \
-        : as_lt_words("dienos", "dienų", "dienų")
+      case variation 
+      when :ago
+        as_lt_words("dieną", "dienų", "dienas")
+      when :noun
+        as_lt_words("diena", "dienų", "dienos")
+      when :since
+        as_lt_words("dienos", "dienų", "dienų")
+      end
     end
     
     # Return _self_ as lithuanian week string
     def as_lt_weeks(variation=:ago)
-      variation == :ago \
-        ? as_lt_words("savaitę", "savaičių", "savaites") \
-        : as_lt_words("savaitės", "savaičių", "savaičių")
+      case variation 
+      when :ago
+        as_lt_words("savaitę", "savaičių", "savaites")
+      when :noun
+        as_lt_words("savaitė", "savaičių", "savaitės")
+      when :since
+        as_lt_words("savaitės", "savaičių", "savaičių")
+      end
     end
   end
   
@@ -235,15 +260,17 @@ module Arturaz
         str
       end
 
-      # Return time as lithuanian string
-      def as_lt_words
-        Time.now > self ? ago_as_lt_words : since_as_lt_words
+      # Return time as lithuanian string. Pass true to _detailed_ to get
+      # word and exact time
+      def as_lt_words(detailed=false)
+        (Time.now > self ? ago_as_lt_words : since_as_lt_words) + 
+          (detailed ? " (#{to_words(:time => true)})" : '')
       rescue ArgumentError
         to_words :time => true
       end
 
       def ago_as_lt_words
-        "prieš " + self.class.distance_in_lt_words(Time.now - self)
+        "prieš " + self.class.distance_in_lt_words(Time.now - self, :ago)
       end
 
       def since_as_lt_words
@@ -253,7 +280,7 @@ module Arturaz
     
     module ClassMethods    
       # Returns distance in _seconds_ in lithuanian words. Max arg: 31 days.
-      def distance_in_lt_words(seconds, variation=:ago)
+      def distance_in_lt_words(seconds, variation=:noun)
         seconds = seconds.round
         if seconds < 60
           return seconds.as_lt_seconds(variation)
