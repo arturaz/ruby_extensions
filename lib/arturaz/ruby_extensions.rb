@@ -164,11 +164,9 @@ module Arturaz
     # Returns _self_ as lithuanian string.
     # 3 arguments used for:
     # * 1, 21, 31, 41...
-    # * 10..20, 30, 40...
+    # * 0, 10..20, 30, 40...
     # * everything else
-    #
-    # Default prefixes are for minutes
-    def as_lt_words(ones = "minutę", tens = "minučių", plural = "minutes")
+    def as_lt_words(ones, tens, plural)
       last = self - (self / 10) * 10
       if last == 0 || (10..20).include?(self)
         "%d #{tens}" % self
@@ -177,6 +175,31 @@ module Arturaz
       else
         "%d #{plural}" % self
       end
+    end
+    
+    # Return _self_ as lithuanian second string
+    def as_lt_seconds
+      as_lt_words "sekundę", "sekundžių", "sekundes"
+    end
+    
+    # Return _self_ as lithuanian minute string
+    def as_lt_minutes
+      as_lt_words "minutę", "minučių", "minutes"
+    end
+    
+    # Return _self_ as lithuanian hour string
+    def as_lt_hours
+      as_lt_words "valandą", "valandų", "valandas"
+    end
+    
+    # Return _self_ as lithuanian day string
+    def as_lt_days
+      as_lt_words "dieną", "dienų", "dienas"
+    end
+    
+    # Return _self_ as lithuanian week string
+    def as_lt_weeks
+      as_lt_words "savaitę", "savaičių", "savaites"
     end
   end
   
@@ -201,29 +224,60 @@ module Arturaz
       str
     end
     
-    # Return time passed from now in lithuanian sentence
-    # Supports minutes/hours/days. Anything else is reported as simple date.
+    # Return time as lithuanian string
+    def as_lt_words
+      Time.now > self ? ago_as_lt_words : to_words(:time => true)
+    rescue ArgumentError
+      to_words :time => true
+    end
+    
     def ago_as_lt_words
-      passed_by = ((Time.now - self) / 60).to_i
-      
-      if passed_by == 0
-        return "ką tik"
-      elsif passed_by < 60
-        return "prieš " + passed_by.as_lt_words
+      "prieš " + distance_in_lt_words(Time.now - self)
+    end
+    
+     # Don't use it - broken. Kartais nekenciu lt kalbos. Fucking linksniai.
+#    def since_as_lt_words
+#      "už " + distance_in_lt_words(self - Time.now)
+#    end
+    
+    # Returns distance in _seconds_ in lithuanian words. Max arg: 31 days.
+    def distance_in_lt_words(seconds)
+      seconds = seconds.to_i
+      if seconds < 60
+        return seconds.as_lt_seconds
       else
-        passed_by /= 60
-        if passed_by < 60
-          return "prieš " + passed_by.as_lt_words("valandą", "valandų", 
-            "valandas")
+        minutes = seconds / 60
+        seconds -= minutes * 60
+        if minutes < 60
+          return minutes.as_lt_minutes + 
+            (seconds == 0 ? '' : ' ir ' + seconds.as_lt_seconds)
         else
-          passed_by /= 24
-          if passed_by <= 31
-            return "prieš " + passed_by.as_lt_words("dieną", "dienų", "dienas")
+          hours = minutes / 60
+          minutes -= hours * 60
+          if hours < 24
+            return hours.as_lt_hours + 
+              (minutes == 0 ? '' : ' ir ' + minutes.as_lt_minutes)
+          else
+            days = hours / 24
+            hours -= days * 24
+            if days <= 31
+              if days >= 7
+                weeks = days / 7
+                days -= weeks * 7
+
+                return weeks.as_lt_weeks + 
+                  (days == 0 ? '' : ' ir ' + days.as_lt_days)
+              else              
+                return days.as_lt_days +
+                  (hours == 0 ? '' : ' ir ' + hours.as_lt_hours)
+              end
+            else
+              raise ArgumentError.new(
+                "Difference is too big! Try using #to_words.")
+            end
           end
         end
       end
-      
-      to_words :time => true      
     end
   end # }}}
 end    
