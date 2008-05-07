@@ -178,102 +178,115 @@ module Arturaz
     end
     
     # Return _self_ as lithuanian second string
-    def as_lt_seconds
-      as_lt_words "sekundę", "sekundžių", "sekundes"
+    def as_lt_seconds(variation=:ago)
+      variation == :ago \
+        ? as_lt_words("sekundę", "sekundžių", "sekundes") \
+        : as_lt_words("sekundės", "sekundžių", "sekundžių")
     end
     
     # Return _self_ as lithuanian minute string
-    def as_lt_minutes
-      as_lt_words "minutę", "minučių", "minutes"
+    def as_lt_minutes(variation=:ago)
+      variation == :ago \
+        ? as_lt_words("minutę", "minučių", "minutes") \
+        : as_lt_words("minutės", "minučių", "minučių")
     end
     
     # Return _self_ as lithuanian hour string
-    def as_lt_hours
-      as_lt_words "valandą", "valandų", "valandas"
+    def as_lt_hours(variation=:ago)
+      variation == :ago \
+        ? as_lt_words("valandą", "valandų", "valandas") \
+        : as_lt_words("valandos", "valandų", "valandų")
     end
     
     # Return _self_ as lithuanian day string
-    def as_lt_days
-      as_lt_words "dieną", "dienų", "dienas"
+    def as_lt_days(variation=:ago)
+      variation == :ago \
+        ? as_lt_words("dieną", "dienų", "dienas") \
+        : as_lt_words("dienos", "dienų", "dienų")
     end
     
     # Return _self_ as lithuanian week string
-    def as_lt_weeks
-      as_lt_words "savaitę", "savaičių", "savaites"
+    def as_lt_weeks(variation=:ago)
+      variation == :ago \
+        ? as_lt_words("savaitę", "savaičių", "savaites") \
+        : as_lt_words("savaitės", "savaičių", "savaičių")
     end
   end
   
   module TimeExtensions # {{{
-    LT_MONTHS = %w[sausio vasario kovo balandžio gegužės birželio liepos 
-    rugpjūčio rugsėjo spalio lapkričio gruodžio]
+    module InstanceMethods
+      LT_MONTHS = %w[sausio vasario kovo balandžio gegužės birželio liepos 
+      rugpjūčio rugsėjo spalio lapkričio gruodžio]
 
-    # Returns time as word representation.
-    #
-    # options:
-    #   :time - add time?
-    #   :seconds - add seconds?
-    def to_words(options={})
-      options = {:time => true, :seconds => false}.merge(options)
-      
-      str = "%04d m. %s %02d d." % [year, LT_MONTHS[month - 1], day]
-      if options[:time]
-        str += " %02d:%02d" % [hour, min]        
-        str += ":%02d" % sec if options[:seconds]
+      # Returns time as word representation.
+      #
+      # options:
+      #   :time - add time?
+      #   :seconds - add seconds?
+      def to_words(options={})
+        options = {:time => true, :seconds => false}.merge(options)
+
+        str = "%04d m. %s %02d d." % [year, LT_MONTHS[month - 1], day]
+        if options[:time]
+          str += " %02d:%02d" % [hour, min]        
+          str += ":%02d" % sec if options[:seconds]
+        end
+
+        str
       end
-      
-      str
-    end
-    
-    # Return time as lithuanian string
-    def as_lt_words
-      Time.now > self ? ago_as_lt_words : to_words(:time => true)
-    rescue ArgumentError
-      to_words :time => true
-    end
-    
-    def ago_as_lt_words
-      "prieš " + distance_in_lt_words(Time.now - self)
-    end
-    
-     # Don't use it - broken. Kartais nekenciu lt kalbos. Fucking linksniai.
-#    def since_as_lt_words
-#      "už " + distance_in_lt_words(self - Time.now)
-#    end
-    
-    # Returns distance in _seconds_ in lithuanian words. Max arg: 31 days.
-    def distance_in_lt_words(seconds)
-      seconds = seconds.to_i
-      if seconds < 60
-        return seconds.as_lt_seconds
-      else
-        minutes = seconds / 60
-        seconds -= minutes * 60
-        if minutes < 60
-          return minutes.as_lt_minutes + 
-            (seconds == 0 ? '' : ' ir ' + seconds.as_lt_seconds)
-        else
-          hours = minutes / 60
-          minutes -= hours * 60
-          if hours < 24
-            return hours.as_lt_hours + 
-              (minutes == 0 ? '' : ' ir ' + minutes.as_lt_minutes)
-          else
-            days = hours / 24
-            hours -= days * 24
-            if days <= 31
-              if days >= 7
-                weeks = days / 7
-                days -= weeks * 7
 
-                return weeks.as_lt_weeks + 
-                  (days == 0 ? '' : ' ir ' + days.as_lt_days)
-              else              
-                return days.as_lt_days +
-                  (hours == 0 ? '' : ' ir ' + hours.as_lt_hours)
-              end
+      # Return time as lithuanian string
+      def as_lt_words
+        Time.now > self ? ago_as_lt_words : since_as_lt_words
+      rescue ArgumentError
+        to_words :time => true
+      end
+
+      def ago_as_lt_words
+        "prieš " + self.class.distance_in_lt_words(Time.now - self)
+      end
+
+      def since_as_lt_words
+        "už " + self.class.distance_in_lt_words(self - Time.now, :since)
+      end
+    end
+    
+    module ClassMethods    
+      # Returns distance in _seconds_ in lithuanian words. Max arg: 31 days.
+      def distance_in_lt_words(seconds, variation=:ago)
+        seconds = seconds.round
+        if seconds < 60
+          return seconds.as_lt_seconds(variation)
+        else
+          minutes = seconds / 60
+          seconds -= minutes * 60
+          if minutes < 60
+            return minutes.as_lt_minutes(variation) + 
+              (seconds == 0 ? '' : ' ir ' + seconds.as_lt_seconds(variation))
+          else
+            hours = minutes / 60
+            minutes -= hours * 60
+            if hours < 24
+              return hours.as_lt_hours(variation) + 
+                (minutes == 0 ? '' : ' ir ' + minutes.as_lt_minutes(variation))
             else
-              raise ArgumentError.new(
-                "Difference is too big! Try using #to_words.")
+              days = hours / 24
+              hours -= days * 24
+              if days <= 31
+                if days >= 7
+                  weeks = days / 7
+                  days -= weeks * 7
+
+                  return weeks.as_lt_weeks(variation) + 
+                    (days == 0 ? '' : ' ir ' + days.as_lt_days(variation))
+                else              
+                  return days.as_lt_days(variation) +
+                    (hours == 0 ? '' : ' ir ' + hours.as_lt_hours(variation))
+                end
+              else
+                raise ArgumentError.new(
+                  "Difference is too big! Try using #to_words.")
+              end
             end
           end
         end
