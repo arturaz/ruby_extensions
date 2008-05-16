@@ -159,6 +159,28 @@ module Arturaz
       end
     end
   end # }}}
+
+  module HashExtensions
+    # Represent this hash in form useable in forms.
+    #
+    # E.g. self[:1][:2][:3] will become self['1[2][3]']
+    def formify(key_format="%s")
+      h = {}
+      each do |k, v|
+        k = key_format % k
+        unless v.is_a? Hash
+          h[k] = v
+        else
+          # 93 == ]
+          k = (k[-1] == 93) ? "#{k[0..-2]}[%s]]" : "#{k}[%s]"
+          v.formify(k).each do |k, v|
+            h[k] = v
+          end
+        end
+      end
+      h
+    end
+  end
 end    
 
 class String
