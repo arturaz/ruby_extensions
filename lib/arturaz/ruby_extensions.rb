@@ -1,3 +1,5 @@
+require 'cgi'
+
 module Arturaz
   module ArrayExtensions # {{{
     # Returns random member of array.
@@ -159,11 +161,11 @@ module Arturaz
       end
     end
     
-    def htmlize(text)
-      if text.nil? or text.blank?
+    def htmlize
+      if self.nil? or self.blank?
         ""
-      else    
-        "<p>" + h(text) \
+      else
+        "<p>" + CGI::escapeHTML(self) \
           .gsub(%r{\b_(.*?)_\b}, '<em>\1</em>') \
           .gsub(%r{(\s|^)(www\..*?)(\s|$)}m, 
             '\1<a href="http://\2">\2</a>\3') \
