@@ -161,24 +161,45 @@ module Arturaz
       end
     end
     
-    def htmlize
+    HTMLIZE_CHANGES = {
+      :stage1 => [
+        [%r{\b_(.*?)_\b}, '<em>\1</em>'],
+        [%r{(\s|^)(www\..*?)(\s|$)}m, '\1<a href="http://\2">\2</a>\3'],
+        [%r{(\s|^)http://(.*?)(\s|$)}m, '\1<a href="http://\2">\2</a>\3'],
+        [%r{(\s|^)\[(www\..*?)\|(.*?)\](\s|$)}m, 
+          '\1<a href="http://\2">\3</a>\4'],
+        [%r{(\s|^)\[http://(.*?)\|(.*?)\](\s|$)}m, 
+          '\1<a href="http://\2">\3</a>\4'],
+
+        [%r{^ *(=+)\s*(.*?)\s*(\1)?\ *$}, "<%h>\\2</%h>\n"],
+
+        ["\t", "  "],
+        [/\n{2,}/, "</p>\t\t<p>"],
+        ["\n", "<br />\n"],
+        ["\t", "\n"]
+      ],
+      :stage2 => [
+        ["<p><%h>", "<%h>"],
+        ["</%h></p>", "</%h>"],
+        ["<br />\n</p>", "</p>"],
+        ["<br />\n<%h>", "</p>\n\n<%h>"]
+      ]
+    }
+    
+    def htmlize(options={})
       if self.nil? or self.blank?
         ""
       else
-        "<p>" + CGI::escapeHTML(self) \
-          .gsub(%r{\b_(.*?)_\b}, '<em>\1</em>') \
-          .gsub(%r{(\s|^)(www\..*?)(\s|$)}m, 
-            '\1<a href="http://\2">\2</a>\3') \
-          .gsub(%r{(\s|^)http://(.*?)(\s|$)}m, 
-            '\1<a href="http://\2">\2</a>\3') \
-          .gsub(%r{(\s|^)\[(www\..*?)\|(.*?)\](\s|$)}m, 
-            '\1<a href="http://\2">\3</a>\4') \
-          .gsub(%r{(\s|^)\[http://(.*?)\|(.*?)\](\s|$)}m, 
-            '\1<a href="http://\2">\3</a>\4') \
-          .gsub("\t", "  ") \
-          .gsub(/\n{2,}/, "</p>\t<p>") \
-          .gsub("\n", "<br />\n") \
-          .gsub("\t", "\n") + "</p>"
+        changed = CGI::escapeHTML(self)
+        h = options[:heading] || 'h3'
+        HTMLIZE_CHANGES[:stage1].each do |regexp, replacement|
+          changed.gsub!(regexp, replacement.gsub("%h", h))
+        end
+        changed = "<p>" + changed + "</p>"
+        HTMLIZE_CHANGES[:stage2].each do |regexp, replacement|
+          changed.gsub!(regexp, replacement.gsub("%h", h))
+        end
+        changed
       end
     end
   end # }}}
