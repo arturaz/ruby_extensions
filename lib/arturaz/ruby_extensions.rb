@@ -158,6 +158,27 @@ module Arturaz
         false
       end
     end
+    
+    def htmlize(text)
+      if text.nil? or text.blank?
+        ""
+      else    
+        "<p>" + h(text) \
+          .gsub(%r{\b_(.*?)_\b}, '<em>\1</em>') \
+          .gsub(%r{(\s|^)(www\..*?)(\s|$)}m, 
+            '\1<a href="http://\2">\2</a>\3') \
+          .gsub(%r{(\s|^)http://(.*?)(\s|$)}m, 
+            '\1<a href="http://\2">\2</a>\3') \
+          .gsub(%r{(\s|^)\[(www\..*?)\|(.*?)\](\s|$)}m, 
+            '\1<a href="http://\2">\3</a>\4') \
+          .gsub(%r{(\s|^)\[http://(.*?)\|(.*?)\](\s|$)}m, 
+            '\1<a href="http://\2">\3</a>\4') \
+          .gsub("\t", "  ") \
+          .gsub(/\n{2,}/, "</p>\t<p>") \
+          .gsub("\n", "<br />\n") \
+          .gsub("\t", "\n") + "</p>"
+      end
+    end
   end # }}}
 
   module HashExtensions
