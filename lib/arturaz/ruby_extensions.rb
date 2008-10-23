@@ -228,8 +228,18 @@ module Arturaz
 end    
 
 class String
-  ALPHANUMERIC = "qwertyuiopasdfghjklzxcvbnm" +
-    "QWERTYUIOPASDFGHJKLZXCVBNM1234567890"
+  ALPHANUMERIC = ("qwertyuiopasdfghjklzxcvbnm" +
+    "QWERTYUIOPASDFGHJKLZXCVBNM1234567890").freeze
+  ALPHANUMERIC_ROT13 = {}
+  ALPHANUMERIC_UNROT13 = {}
+  0.upto(ALPHANUMERIC.length - 1) do |index|
+    new_index = index + 13
+    new_index -= 62 if new_index >= 62
+    ALPHANUMERIC_ROT13[ALPHANUMERIC[index]] = ALPHANUMERIC[new_index]
+    ALPHANUMERIC_UNROT13[ALPHANUMERIC[new_index]] = ALPHANUMERIC[index]
+  end
+  ALPHANUMERIC_ROT13.freeze
+  ALPHANUMERIC_UNROT13.freeze
 
   # Generate random alphanumeric _length_ long string.
   def self.random(length=8)
@@ -237,5 +247,18 @@ class String
     an_length = ALPHANUMERIC.length - 1
     length.times { str += ALPHANUMERIC[rand(an_length)].chr }
     str
+  end
+  
+  # ROT13 the string, but only alphanumeric parts.
+  def an_rot13(set=ALPHANUMERIC_ROT13)
+    chars.split(//).map do |char|
+      new_code = set[char[0]]
+      new_code.nil? ? char : new_code.chr
+    end.join('')
+  end
+  
+  # Un-ROT13 the string, but only alphanumeric parts.
+  def an_unrot13
+    an_rot13(ALPHANUMERIC_UNROT13)
   end
 end
