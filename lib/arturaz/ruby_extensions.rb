@@ -163,6 +163,7 @@ module Arturaz
     
     HTMLIZE_CHANGES = {
       :stage1 => [
+        ["\r", ''],
         [%r{\b_(.*?)_\b}, '<em>\1</em>'],
         [%r{(\s|^)(www\..*?)(\s|$)}m, '\1<a href="http://\2">\2</a>\3'],
         [%r{(\s|^)http://(.*?)(\s|$)}m, '\1<a href="http://\2">\2</a>\3'],
@@ -171,6 +172,7 @@ module Arturaz
         [%r{(\s|^)\[http://(.*?)\|(.*?)\](\s|$)}m, 
           '\1<a href="http://\2">\3</a>\4'],
 
+        # TODO: === foo === leaves last ===
         [%r{^ *(=+)\s*(.*?)\s*(\1)?\ *$}, "<%h>\\2</%h>\n"],
 
         ["\t", "  "],
@@ -193,13 +195,13 @@ module Arturaz
         changed = CGI::escapeHTML(self)
         h = options[:heading] || 'h3'
         HTMLIZE_CHANGES[:stage1].each do |regexp, replacement|
-          changed.gsub!(regexp, replacement.gsub("%h", h))
+          changed.gsub!(regexp, replacement)
         end
         changed = "<p>" + changed + "</p>"
         HTMLIZE_CHANGES[:stage2].each do |regexp, replacement|
-          changed.gsub!(regexp, replacement.gsub("%h", h))
+          changed.gsub!(regexp, replacement)
         end
-        changed
+        changed.gsub(%r{<(/)?%h>}, "<\\1#{h}>")
       end
     end
   end # }}}
