@@ -22,6 +22,44 @@ module Arturaz
     def avg
       average
     end
+
+    # Same as Array#uniq but accepts block argument which result will
+    # be used for determining which values are unique.
+    #
+    #   a = ['a', 'A', 'bb', 'bB', 'Bb', 'Cc', 'cc']
+    #   a.uniq { |i| i.downcase } # => ["a", "bb", "Cc"]
+    def uniq_with_block(&block)
+      if block
+        first_values = {}
+        map do |value|
+          key = yield value
+          first_values[key] ||= value
+          first_values[key]
+        end.uniq
+      else
+        uniq_without_block
+      end
+    end
+
+    # Adds block support to Array#uniq!
+    def uniq_with_block!(&block)
+      if block
+        replace uniq_with_block(&block)
+      else
+        uniq_without_block!
+      end
+    end
+
+    # This is evil and it's only because of my lack of knowledge I guess.
+    def self.append_features(mod)
+      super(mod)
+      mod.instance_eval do
+        alias_method :uniq_without_block, :uniq
+        alias_method :uniq, :uniq_with_block
+        alias_method :uniq_without_block!, :uniq!
+        alias_method :uniq!, :uniq_with_block!
+      end
+    end
   end # }}}
   
   module StringExtensions # {{{
@@ -165,15 +203,14 @@ module Arturaz
       :stage1 => [
         ["\r", ''],
         [%r{\b_(.*?)_\b}, '<em>\1</em>'],
+        [%r{\[(www\..*?)\|(.*?)\]}m,
+          '<a href="http://\1">\2</a>'],
+        [%r{\[(\w+)://(.*?)\|(.*?)\]}m,
+          '<a href="\1://\2">\3</a>'],
         [%r{(\s|^)(www\..*?)(\s|$)}m, '\1<a href="http://\2">\2</a>\3'],
-        [%r{(\s|^)http://(.*?)(\s|$)}m, '\1<a href="http://\2">\2</a>\3'],
-        [%r{(\s|^)\[(www\..*?)\|(.*?)\](\s|$)}m, 
-          '\1<a href="http://\2">\3</a>\4'],
-        [%r{(\s|^)\[http://(.*?)\|(.*?)\](\s|$)}m, 
-          '\1<a href="http://\2">\3</a>\4'],
+        [%r{(\s|^)(\w+)://(.*?)(\s|$)}m, '\1<a href="\2://\3">\3</a>\4'],
 
-        # TODO: === foo === leaves last ===
-        [%r{^ *(=+)\s*(.*?)\s*(\1)?\ *$}, "<%h>\\2</%h>\n"],
+        [%r{^ *(=+)\s*(.*?)\s*(\1)?\ *$}m, "<%h>\\2</%h>\n"],
 
         ["\t", "  "],
         [/\n{2,}/, "</p>\t\t<p>"],
@@ -211,20 +248,20 @@ module Arturaz
     #
     # E.g. self[:1][:2][:3] will become self['1[2][3]']
     def formify(key_format="%s")
-      h = {}
-      each do |k, v|
-        k = key_format % k
-        unless v.is_a? Hash
-          h[k] = v
+      hash = {}
+      each do |key, value|
+        key = key_format % key
+        unless value.is_a? Hash
+          hash[key] = value
         else
           # 93 == ]
-          k = (k[-1] == 93) ? "#{k[0..-2]}[%s]]" : "#{k}[%s]"
-          v.formify(k).each do |k, v|
-            h[k] = v
+          key = (key[-1] == 93) ? "#{key[0..-2]}[%s]]" : "#{key}[%s]"
+          value.formify(key).each do |key, value|
+            hash[key] = value
           end
         end
       end
-      h
+      hash
     end
   end
 end    
@@ -253,7 +290,7 @@ class String
   
   # ROT13 the string, but only alphanumeric parts.
   def an_rot13(set=ALPHANUMERIC_ROT13)
-    chars.split(//).map do |char|
+    mb_chars.split(//).map do |char|
       new_code = set[char[0]]
       new_code.nil? ? char : new_code.chr
     end.join('')
