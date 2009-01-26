@@ -72,7 +72,7 @@ module Arturaz
   
     # Converts lithuanian characters to latin ones.
     def delithuanize
-      str = self.clone
+      str = self.dup
       {
         LOWERCASE_LITHUANIAN_LETTERS => LOWERCASE_LITHUANIAN_TO_LATIN_LETTERS,
         UPPERCASE_LITHUANIAN_LETTERS => UPPERCASE_LITHUANIAN_TO_LATIN_LETTERS
@@ -117,11 +117,15 @@ module Arturaz
     end
     
     def slugize
-      self \
+      return "" if strip == ""
+
+      str = self \
         .delithuanize \
         .gsub(%r{([^a-z0-9]|-)+}i, '-') \
         .gsub(%r{^-?(.*?)-?$}, '\1') \
         .downcase
+
+      str == '' ? "-" : str
     end
     
     def slug?
@@ -149,7 +153,7 @@ module Arturaz
     
     # Downcase only first char.
     def downcase_first
-      str = self.clone
+      str = self.dup
       str[0] = str[0].chr.downcase
       str
     end
@@ -161,7 +165,7 @@ module Arturaz
     
     # Upcase only first char.
     def upcase_first
-      str = self.clone
+      str = self.dup
       str[0] = str[0].chr.upcase
       str
     end
