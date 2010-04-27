@@ -1,4 +1,12 @@
+# coding: utf-8
 require 'cgi'
+
+module RubyExtensions
+  mattr_accessor :youtube_width, :youtube_height
+
+  self.youtube_width = 480
+  self.youtube_height = 385
+end
 
 module Arturaz
   module ArrayExtensions # {{{
@@ -21,6 +29,79 @@ module Arturaz
     # Alias for _average_ method.
     def avg
       average
+    end
+
+    def shuffle
+      sort_by { rand }
+    end
+
+    def shuffle!
+      self.replace shuffle
+    end
+
+    # Acts as #group_by. Groups array by given block but retuns Hash instead
+    # of Array.
+    #
+    # Example:
+    #  class GroupToHashTest
+    #    def initialize(num); @num = num; end
+    #    def test; "%03d" % @num; end
+    #  end
+    #
+    #  g1 = GroupedCountsByTest.new(1)
+    #  g2 = GroupedCountsByTest.new(3)
+    #  g3 = GroupedCountsByTest.new(1)
+    #
+    #  [g1, g2, g3].group_to_hash { |i| i.test }.should == {
+    #    "001" => [g1, g3],
+    #    "003" => [g2]
+    #  }
+    #
+    def group_to_hash
+      grouped = {}
+
+      each do |item|
+        group_id = yield item
+        grouped[group_id] ||= []
+        grouped[group_id].push item
+      end
+
+      grouped
+    end
+
+    # Groups given array members and returns a hash consisting of
+    # type => count pairs. If block is given it determines type by block
+    # return value. Members are used otherwise.
+    # 
+    # Example:
+    #  class GroupedCountsByTest
+    #    def initialize(num); @num = num; end
+    #    def test; "%03d" % @num; end
+    #  end
+    #
+    #  [
+    #    GroupedCountsByTest.new(1),
+    #    GroupedCountsByTest.new(3),
+    #    GroupedCountsByTest.new(3),
+    #    GroupedCountsByTest.new(1),
+    #    GroupedCountsByTest.new(5),
+    #    GroupedCountsByTest.new(5),
+    #    GroupedCountsByTest.new(1)
+    #  ].grouped_counts { |i| i.test }.should == {
+    #    "001" => 3,
+    #    "003" => 2,
+    #    "005" => 2
+    #  }
+    def grouped_counts(&block)
+      grouped = {}
+
+      each do |item|
+        item = block_given? ? block.call(item) : item
+        grouped[item] ||= 0
+        grouped[item] += 1
+      end
+
+      grouped
     end
 
     # Same as Array#uniq but accepts block argument which result will
@@ -205,15 +286,6 @@ module Arturaz
     
     HTMLIZE_CHANGES = {
       :stage1 => [
-        ["\r", ''],
-        [%r{\b_(.*?)_\b}, '<em>\1</em>'],
-        [%r{\[(www\..*?)\|(.*?)\]}m,
-          '<a href="http://\1">\2</a>'],
-        [%r{\[(\w+)://(.*?)\|(.*?)\]}m,
-          '<a href="\1://\2">\3</a>'],
-        [%r{(\s|^)(www\..*?)(\s|$)}m, '\1<a href="http://\2">\2</a>\3'],
-        [%r{(\s|^)(\w+)://(.*?)(\s|$)}m, '\1<a href="\2://\3">\3</a>\4'],
-
         [%r{^ *(=+)\s*(.*?)\s*(\1)?\ *$}m, "<%h>\\2</%h>\n"],
 
         ["\t", "  "],
@@ -228,12 +300,63 @@ module Arturaz
         ["<br />\n<%h>", "</p>\n\n<%h>"]
       ]
     }
+
+    YOUTUBE_LINK_REGEXP = %r{http://www.youtube.com/watch\?.*?v=([^&\s]+).*?(\s|$)}
+    YOUTUBE_LINK_MARKER = "{%youtube_link_marker%}"
+    NAMED_LINK_REGEXP = %r{\[(((\w+?)://(.+?))|(www\.[^\s]+))\|(.*?)\]}
+    NAMED_LINK_MARKER = "{%named_link_marker%}"
+    LINK_REGEXP = %r{(\b)(((\w+?)://(.+?))|(www\.[^\s]+))(\s|$)}m
+    LINK_MARKER = "{%link_marker%}"
     
     def htmlize(options={})
       if self.nil? or self.blank?
         ""
       else
-        changed = CGI::escapeHTML(self)
+        changed = CGI::escapeHTML(self).gsub("\r", "")
+
+        youtube_links = changed.scan(YOUTUBE_LINK_REGEXP)
+        changed.gsub!(YOUTUBE_LINK_REGEXP, YOUTUBE_LINK_MARKER)
+        named_links = changed.scan(NAMED_LINK_REGEXP)
+        changed.gsub!(NAMED_LINK_REGEXP, NAMED_LINK_MARKER)
+        links = changed.scan(LINK_REGEXP)
+        changed.gsub!(LINK_REGEXP, LINK_MARKER)
+
+        # Emphasize
+        changed.gsub!(%r{\b_(.*?)_\b}, '<em>\1</em>')
+
+        changed = changed.gsub(YOUTUBE_LINK_MARKER) do |match|
+          id, end_symbol = youtube_links.shift
+          url = "http://www.youtube.com/v/#{id}&hl=en&fs=1&rel=0"
+
+          "<object width='#{RubyExtensions.youtube_width}' " +
+            "height='#{RubyExtensions.youtube_height}'><param name='movie' " +
+            "value='#{url}'></param><param " +
+            "name='allowFullScreen' value='true'></param><param name='allowscriptaccess' " +
+            "value='always'></param><embed src='#{url}' type='application/x-shockwave-flash' " +
+            "allowscriptaccess='always' allowfullscreen='true' " +
+            "width='#{RubyExtensions.youtube_width}' " +
+            "height='#{RubyExtensions.youtube_height}'></embed></object>#{end_symbol}"
+        end
+
+        changed = changed.gsub(NAMED_LINK_MARKER) do |match|
+          waste, waste, protocol, rest_of_link, www_link, text = named_links.shift
+          href = protocol.nil? ? "http://#{www_link}" : "#{protocol}://#{rest_of_link}"
+          "<a href='#{href}'>#{text}</a>"
+        end
+
+        changed = changed.gsub(LINK_MARKER) do |match|
+          sep1, waste, waste, protocol, rest_of_link, www_link, sep2 = links.shift
+          href, text = nil
+          if protocol.nil?
+            href = "http://#{www_link}"
+            text = www_link
+          else
+            href = "#{protocol}://#{rest_of_link}"
+            text = rest_of_link
+          end
+          "#{sep1}<a href='#{href}'>#{text}</a>#{sep2}"
+        end
+
         h = options[:heading] || 'h3'
         HTMLIZE_CHANGES[:stage1].each do |regexp, replacement|
           changed.gsub!(regexp, replacement)
@@ -242,7 +365,9 @@ module Arturaz
         HTMLIZE_CHANGES[:stage2].each do |regexp, replacement|
           changed.gsub!(regexp, replacement)
         end
-        changed.gsub(%r{<(/)?%h>}, "<\\1#{h}>")
+        changed.gsub!(%r{<(/)?%h>}, "<\\1#{h}>")
+
+        changed
       end
     end
   end # }}}
@@ -267,8 +392,63 @@ module Arturaz
       end
       hash
     end
+
+    # Merges values from other hash. Calls block with both values if keys
+    # match.
+    #
+    # Example:
+    # 
+    #  first = {:a => 10, :c => 20}
+    #  second = {:b => 5, :c => 5}
+    #
+    #  first.merge_values!(second) do |a, b|
+    #    a + b
+    #  end
+    #
+    #  first.should == {:a => 10, :b => 5, :c => 25}
+    #
+    def merge_values!(other)
+      other.each do |key, value|
+        if has_key?(key)
+          self[key] = yield self[key], value
+        else
+          self[key] = value
+        end
+      end
+    end
+
+    def flip
+     self.class[*self.to_a.flatten.reverse]
+    end
   end
-end    
+end
+
+module Kernel
+  def rangerand(min=nil, max=nil)
+    if max.nil?
+      old_rand(min)
+    elsif min.nil?
+      old_rand
+    else
+      min + old_rand((min - max).abs)
+    end
+  end
+
+  def platform
+    if RUBY_PLATFORM =~ /(win|w)32$/
+      :windows
+    elsif RUBY_PLATFORM =~ /linux$/
+      :linux
+    else
+      :unknown
+    end
+  end
+end
+alias old_rand rand
+# Rand with min/max behavior
+def rand(min=nil, max=nil)
+  Kernel.rangerand(min, max)
+end
 
 class String
   ALPHANUMERIC = ("qwertyuiopasdfghjklzxcvbnm" +
@@ -303,5 +483,37 @@ class String
   # Un-ROT13 the string, but only alphanumeric parts.
   def an_unrot13
     an_rot13(ALPHANUMERIC_UNROT13)
+  end
+
+  def diff(other_str)
+    ver1 = scan(/./)
+    ver2 = other_str.scan(/./)
+
+    i = 0
+    until ver1.blank?
+      char1 = ver1.shift
+      char2 = ver2.shift
+
+      if char1 != char2
+        puts "#{char1} != #{char2} @ char #{i}!!!"
+        puts "self: #{char1}#{ver1.join('')}"
+        puts "other_str: #{char2}#{ver2.join('')}"
+      end
+    end
+  end
+end
+
+class Fixnum
+  def to_minutes_and_seconds
+    minutes = self / 60
+    seconds = self % 60
+    [minutes, seconds]
+  end
+end
+
+class Time
+  # Returns _self_ with #usec set to 0
+  def drop_usec
+    Time.at(to_i)
   end
 end
