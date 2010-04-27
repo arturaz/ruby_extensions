@@ -1,10 +1,10 @@
-begin
-  require File.dirname(__FILE__) + '/../../../../spec/spec_helper'
-rescue LoadError
-  puts "You need to install rspec in your base app"
-  exit
+# Ensure that libs are loaded only one time per spec-run.
+if $SPEC_INITIALIZED.nil?
+  ENV['environment'] = 'test'
+  require 'rubygems'
+  require 'activesupport'
+  require 'spec'
+  require File.dirname(__FILE__) + '/../init.rb'
+
+  $SPEC_INITIALIZED = true
 end
-
-plugin_spec_dir = File.dirname(__FILE__)
-ActiveRecord::Base.logger = Logger.new(plugin_spec_dir + "/debug.log")
-
