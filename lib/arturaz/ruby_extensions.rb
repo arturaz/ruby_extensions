@@ -2,7 +2,10 @@
 require 'cgi'
 
 module RubyExtensions
-  mattr_accessor :youtube_width, :youtube_height
+  def self.youtube_width=(value); @@youtube_width = value; end
+  def self.youtube_width; @@youtube_width; end
+  def self.youtube_height=(value); @@youtube_height = value; end
+  def self.youtube_height; @@youtube_height; end
 
   self.youtube_width = 480
   self.youtube_height = 385
@@ -10,8 +13,58 @@ end
 
 module Arturaz
   module ArrayExtensions # {{{
+    # Chooses a random array element from the receiver based on the weights
+    # provided. If _weights_ is nil, then each element is weighed equally.
+    # 
+    #   [1,2,3].weighted_random          #=> 2
+    #   [1,2,3].weighted_random          #=> 1
+    #   [1,2,3].weighted_random          #=> 3
+    #
+    # If _weights_ is an array, then each element of the receiver gets its
+    # weight from the corresponding element of _weights_. Notice that it
+    # favors the element with the highest weight.
+    #
+    #   [1,2,3].weighted_random([1,4,1]) #=> 2
+    #   [1,2,3].weighted_random([1,4,1]) #=> 1
+    #   [1,2,3].weighted_random([1,4,1]) #=> 2
+    #   [1,2,3].weighted_random([1,4,1]) #=> 2
+    #   [1,2,3].weighted_random([1,4,1]) #=> 3
+    #
+    # If _weights_ is a symbol, the weight array is constructed by calling
+    # the appropriate method on each array element in turn. Notice that
+    # it favors the longer word when using :length.
+    #
+    #   ['dog', 'cat', 'hippopotamus'].weighted_random(:length) #=> "hippopotamus"
+    #   ['dog', 'cat', 'hippopotamus'].weighted_random(:length) #=> "dog"
+    #   ['dog', 'cat', 'hippopotamus'].weighted_random(:length) #=> "hippopotamus"
+    #   ['dog', 'cat', 'hippopotamus'].weighted_random(:length) #=> "hippopotamus"
+    #   ['dog', 'cat', 'hippopotamus'].weighted_random(:length) #=> "cat"
+    #
+    # It can also accept block instead of symbol.
+    #
+    #   ['dog', 'cat', 'hippopotamus'].weighted_random { |item| item.length }
+    #
+    # From: http://snippets.dzone.com/posts/show/898
+    #
+    def weighted_random(weights=nil)
+      return weighted_random(map { |n| n.send(weights) }) \
+        if weights.is_a? Symbol
+      return weighted_random(map { |n| yield(n) }) \
+        if weights.nil? and block_given?
+      
+      weights ||= Array.new(length, 1.0)
+      total = weights.inject(0.0) { |total, weight| total + weight }
+      point = Kernel.rand * total
+      
+      zip(weights).each do |n, weight|
+        return n if weight >= point
+        point -= weight
+      end
+    end
+
+    #
     # Returns random member of array.
-    def random
+    def random_element
       self[rand(self.length)]
     end
 
@@ -37,71 +90,6 @@ module Arturaz
 
     def shuffle!
       self.replace shuffle
-    end
-
-    # Acts as #group_by. Groups array by given block but retuns Hash instead
-    # of Array.
-    #
-    # Example:
-    #  class GroupToHashTest
-    #    def initialize(num); @num = num; end
-    #    def test; "%03d" % @num; end
-    #  end
-    #
-    #  g1 = GroupedCountsByTest.new(1)
-    #  g2 = GroupedCountsByTest.new(3)
-    #  g3 = GroupedCountsByTest.new(1)
-    #
-    #  [g1, g2, g3].group_to_hash { |i| i.test }.should == {
-    #    "001" => [g1, g3],
-    #    "003" => [g2]
-    #  }
-    #
-    def group_to_hash
-      grouped = {}
-
-      each do |item|
-        group_id = yield item
-        grouped[group_id] ||= []
-        grouped[group_id].push item
-      end
-
-      grouped
-    end
-
-    # Groups given array members and returns a hash consisting of
-    # type => count pairs. If block is given it determines type by block
-    # return value. Members are used otherwise.
-    # 
-    # Example:
-    #  class GroupedCountsByTest
-    #    def initialize(num); @num = num; end
-    #    def test; "%03d" % @num; end
-    #  end
-    #
-    #  [
-    #    GroupedCountsByTest.new(1),
-    #    GroupedCountsByTest.new(3),
-    #    GroupedCountsByTest.new(3),
-    #    GroupedCountsByTest.new(1),
-    #    GroupedCountsByTest.new(5),
-    #    GroupedCountsByTest.new(5),
-    #    GroupedCountsByTest.new(1)
-    #  ].grouped_counts { |i| i.test }.should == {
-    #    "001" => 3,
-    #    "003" => 2,
-    #    "005" => 2
-    #  }
-    def grouped_counts(&block)
-      grouped = {}
-
-      each do |item|
-        item = block_given? ? block.call(item) : item
-        grouped[item] ||= 0
-        grouped[item] += 1
-      end
-
-      grouped
     end
 
     # Same as Array#uniq but accepts block argument which result will
@@ -309,7 +297,7 @@ module Arturaz
     LINK_MARKER = "{%link_marker%}"
     
     def htmlize(options={})
-      if self.nil? or self.blank?
+      if self.nil? or self.strip.size == 0
         ""
       else
         changed = CGI::escapeHTML(self).gsub("\r", "")
@@ -418,7 +406,29 @@ module Arturaz
     end
 
     def flip
-     self.class[*self.to_a.flatten.reverse]
+      self.class[*self.to_a.flatten.reverse]
+    end
+
+    # Maps values of +Hash+ returning new +Hash+ with it's values mapped.
+    #
+    #   source = {1 => 2, 3 => 4}
+    #   source.map_values do |key, value|
+    #     value * 2
+    #   end.should == {1 => 4, 3 => 8}
+    def map_values
+      mapped = {}
+      each do |key, value|
+        mapped[key] = yield key, value
+      end
+
+      mapped
+    end
+
+    # Return new +Hash+ with only keys from whitelist.
+    def only(*whitelist)
+      {}.tap do |h|
+        (keys & whitelist).each { |k| h[k] = self[k] }
+      end
     end
   end
 end
@@ -511,9 +521,195 @@ class Fixnum
   end
 end
 
+class Float
+  alias :old_round :round
+
+  # Round float to number of places:
+  #
+  # >> 0.538305321343516.round             => 1
+  # >> 0.538305321343516.round(1)          => 0.5
+  # >> 0.538305321343516.round(2)          => 0.54
+  # >> 0.538305321343516.round(3)          => 0.538
+  #
+  def round(places=0)
+    if places == 0
+      old_round
+    else
+      raise ArgumentError.new(
+        "Places must be positive! #{places.inspect} given") if places < 0
+      places = places.to_i
+      rounder = (10 ** places).to_f
+      (self * rounder).old_round / rounder
+    end
+  end
+end
+
 class Time
   # Returns _self_ with #usec set to 0
   def drop_usec
     Time.at(to_i)
+  end
+end
+
+class Object
+  # Try calling _method_ if it's available. If it's not available, just
+  # return +nil+.
+  #
+  def try_method(method, *args)
+    if respond_to?(method)
+      send(method, *args)
+    else
+      nil
+    end
+  end
+end
+
+class Range
+  def *(value)
+    (first * value)..(last * value)
+  end
+  
+  def /(value)
+    (first / value)..(last / value)
+  end
+end
+
+class Random
+  # Return boolean value based on integer _chance_.
+  def self.chance(chance)
+    rand(100) + 1 <= chance
+  end
+end
+
+module Enumerable
+  # Hash by given block.
+  #
+  # Example:
+  # [
+  #   {:id => 1, :name => '1'},
+  #   {:id => 2, :name => '2'},
+  #   {:id => 3, :name => '3'},
+  # ].hash_by { |item| item[:id] }.should == {
+  #   1 => {:id => 1, :name => '1'},
+  #   2 => {:id => 2, :name => '2'},
+  #   3 => {:id => 3, :name => '3'}
+  # }
+  #
+  def hash_by
+    hash = {}
+    each do |item|
+      hash[yield item] = item
+    end
+    hash
+  end
+
+  # Acts as #group_by. Groups array by given block but retuns Hash instead
+  # of Array.
+  #
+  # Example:
+  #  class GroupToHashTest
+  #    def initialize(num); @num = num; end
+  #    def test; "%03d" % @num; end
+  #  end
+  #
+  #  g1 = GroupToHashTest.new(1)
+  #  g2 = GroupToHashTest.new(3)
+  #  g3 = GroupToHashTest.new(1)
+  #
+  #  [g1, g2, g3].group_to_hash { |i| i.test }.should == {
+  #    "001" => [g1, g3],
+  #    "003" => [g2]
+  #  }
+  #
+  def group_to_hash
+    grouped = {}
+
+    each do |item|
+      group_id = yield item
+      grouped[group_id] ||= []
+      grouped[group_id].push item
+    end
+
+    grouped
+  end
+
+  # Groups given array members and returns a hash consisting of
+  # type => count pairs. If block is given it determines type by block
+  # return value. Members are used otherwise.
+  # 
+  # Example:
+  #  class GroupedCountsByTest
+  #    def initialize(num); @num = num; end
+  #    def test; "%03d" % @num; end
+  #  end
+  #
+  #  [
+  #    GroupedCountsByTest.new(1),
+  #    GroupedCountsByTest.new(3),
+  #    GroupedCountsByTest.new(3),
+  #    GroupedCountsByTest.new(1),
+  #    GroupedCountsByTest.new(5),
+  #    GroupedCountsByTest.new(5),
+  #    GroupedCountsByTest.new(1)
+  #  ].grouped_counts { |i| i.test }.should == {
+  #    "001" => 3,
+  #    "003" => 2,
+  #    "005" => 2
+  #  }
+  def grouped_counts(&block)
+    grouped = {}
+
+    each do |item|
+      item = block_given? ? block.call(item) : item
+      grouped[item] ||= 0
+      grouped[item] += 1
+    end
+
+    grouped
+  end
+
+  # Acts like #map but returns +Hash+ of {original => mapped} pairs
+  # instead of +Array+.
+  #
+  # Example:
+  # [1,2,3].map_to_hash { |i| i ** 2 }.should == {
+  #   1 => 1,
+  #   2 => 4,
+  #   3 => 9
+  # }
+  #
+  def map_to_hash
+    hash = {}
+    each do |item|
+      hash[item] = yield(item)
+    end
+    hash
+  end
+
+  # Acts like #map but returns +Hash+ of {key => value} pairs
+  # instead of +Array+. Your block must return [key, value] pairs.
+  #
+  # Example:
+  #  [1,2,3].map_into_hash { |i| [i.to_s, i ** 2] }.should == {
+  #    "1" => 1,
+  #    "2" => 4,
+  #    "3" => 9
+  #  }
+  #
+  def map_into_hash
+    hash = {}
+    each do |item|
+      key, value = yield(item)
+      hash[key] = value
+    end
+    hash
+  end
+  
+  def accept
+    reject { |item| ! yield(item) }
+  end
+
+  def accept!
+    reject! { |item| ! yield(item) }
   end
 end

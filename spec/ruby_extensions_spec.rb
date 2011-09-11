@@ -250,6 +250,40 @@ EOF
 end
 
 describe Array do
+  describe "#hash_by" do
+    it "should return a Hash" do
+      [
+        {:id => 1, :name => '1'},
+        {:id => 2, :name => '2'},
+        {:id => 3, :name => '3'},
+      ].hash_by { |item| item[:id] }.should == {
+        1 => {:id => 1, :name => '1'},
+        2 => {:id => 2, :name => '2'},
+        3 => {:id => 3, :name => '3'}
+      }
+    end
+  end
+
+  describe "#map_to_hash" do
+    it "should return a Hash" do
+      [1,2,3].map_to_hash { |i| i ** 2 }.should == {
+        1 => 1,
+        2 => 4,
+        3 => 9
+      }
+    end
+  end
+
+  describe "#map_into_hash" do
+    it "should return a Hash" do
+      [1,2,3].map_into_hash { |i| [i.to_s, i ** 2] }.should == {
+        "1" => 1,
+        "2" => 4,
+        "3" => 9
+      }
+    end
+  end
+
   describe "#shuffle" do
     it "should shuffle the array" do
       array = [1,2,3,4,5]
@@ -268,7 +302,7 @@ describe Array do
 
   describe "#group_to_hash" do
     it "should group to hash" do
-      class GroupToHashTest
+      class GroupedCountsByTest
         def initialize(num); @num = num; end
         def test; "%03d" % @num; end
       end
@@ -321,6 +355,15 @@ describe Hash do
       first.should == {:a => 10, :b => 5, :c => 25}
     end
   end
+
+  describe "#map_values" do
+    it "should map values" do
+      source = {1 => 2, 3 => 4}
+      source.map_values do |key, value|
+        value * 2
+      end.should == {1 => 4, 3 => 8}
+    end
+  end
 end
 
 describe Fixnum do
@@ -339,6 +382,18 @@ describe Fixnum do
 
     it "should work on marginal minutes" do
       120.to_minutes_and_seconds.should == [2, 0]
+    end
+  end
+end
+
+describe Object do
+  describe "#try_method" do
+    it "should call method if available" do
+      "foo".try_method(:length).should == 3
+    end
+
+    it "should return nil if unavailable" do
+      "foo".try_method(:i_do_not_exist).should be_nil
     end
   end
 end
