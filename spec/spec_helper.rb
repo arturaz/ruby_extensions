@@ -3,7 +3,7 @@ if $SPEC_INITIALIZED.nil?
   ENV['environment'] = 'test'
   require 'rubygems'
   require 'active_support'
-  require 'spec'
+  require 'rspec'
   require File.dirname(__FILE__) + '/../init.rb'
 
   $SPEC_INITIALIZED = true

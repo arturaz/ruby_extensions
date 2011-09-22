@@ -364,6 +364,78 @@ describe Hash do
       end.should == {1 => 4, 3 => 8}
     end
   end
+
+  describe "#ensure_options!" do
+    describe "requirements" do
+      it "should raise ArgumentError if required param " +
+      "is missing" do
+        lambda do
+          hash = {'aa' => 10}
+          hash.ensure_options! :required => 'lol'
+        end.should raise_error(ArgumentError)
+      end
+
+      it "should support array syntax" do
+        lambda do
+          hash = {'foo' => 10, 'bar' => 20}
+          hash.ensure_options! :required => %w{foo bar}
+        end.should_not raise_error(ArgumentError)
+      end
+
+      it "should support hash syntax" do
+        lambda do
+          hash = {:foo => 10, :bar => "20"}
+          hash.ensure_options! :required => {:foo => Fixnum, :bar => String}
+        end.should_not raise_error(ArgumentError)
+      end
+
+      it "should support multiple type checking" do
+        lambda do
+          hash = {:foo => 10, :bar => false}
+          hash.ensure_options! :required => {:foo => Fixnum,
+            :bar => [TrueClass, FalseClass]}
+        end.should_not raise_error(ArgumentError)
+      end
+
+      it "should fail if types mismatch" do
+        lambda do
+          hash = {:foo => 10, :bar => nil}
+          hash.ensure_options! :required => {:foo => Fixnum,
+            :bar => [TrueClass, FalseClass]}
+        end.should raise_error(ArgumentError)
+      end
+
+      it "should pass if required params is given" do
+        lambda do
+          hash = {'lol' => 10}
+          hash.ensure_options! :required => 'lol'
+        end.should_not raise_error(ArgumentError)
+      end
+    end
+
+    describe "validity" do
+      it "should raise ArgumentError if param is not from valid list" do
+        lambda do
+          hash = {'aa' => 10}
+          hash.ensure_options! :valid => 'lol'
+        end.should raise_error(ArgumentError)
+      end
+
+      it "should pass if params are from valid list" do
+        lambda do
+          hash = {'lol' => 10}
+          hash.ensure_options! :valid => 'lol'
+        end.should_not raise_error(ArgumentError)
+      end
+    end
+
+    it "should pass if all params are valid and required are provided" do
+      lambda do
+        hash = {'baz' => 10, 'lol' => 20}
+        hash.ensure_options! :valid => 'lol', :required => 'baz'
+      end.should_not raise_error(ArgumentError)
+    end
+  end
 end
 
 describe Fixnum do
