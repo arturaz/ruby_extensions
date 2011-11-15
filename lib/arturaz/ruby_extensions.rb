@@ -692,7 +692,7 @@ module Enumerable
   def hash_by
     hash = {}
     each do |item|
-      hash[yield item] = item
+      hash[yield(item)] = item
     end
     hash
   end
