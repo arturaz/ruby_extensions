@@ -62,6 +62,29 @@ module Arturaz
       end
     end
 
+    # Split an array of elements into a set of smaller arrays of equal size.
+    # Extra elements are preferentially assigned to earlier arrays. If there
+    # are no elements in a given returned array it will be [] (empty array)
+    #
+    #   >> [1,2,3,4,5,6,7,8,9,10].chunk
+    #   => [[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]
+    #
+    #   >> [1,2,3,4,5,6,7,8,9,10].chunk(3)
+    #   => [[1, 2, 3, 4], [5, 6, 7], [8, 9, 10]]
+    def chunk(pieces=2)
+      len = self.length
+      mid = len / pieces
+      chunks = []
+      start = 0
+      1.upto(pieces) do |i|
+        last = start + mid
+        last = last - 1 unless len % pieces >= i
+        chunks << self[start..last] || []
+        start = last + 1
+      end
+      chunks
+    end
+
     #
     # Returns random member of array.
     def random_element
