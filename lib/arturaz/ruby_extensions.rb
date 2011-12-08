@@ -285,15 +285,15 @@ module Arturaz
     def startswith(str)
       (self.index(str) == 0) ? true : false
     end
-    
+
+    alias :starts_with? :startswith
+
     def endswith(str)
       index = self.rindex(str)
-      if not index.nil? and (index + str.length) == self.length
-        true
-      else
-        false
-      end
+      ! index.nil? && (index + str.length) == self.length
     end
+
+    alias :ends_with? :endswith
     
     HTMLIZE_CHANGES = {
       :stage1 => [
