@@ -62,6 +62,10 @@ module Arturaz
       end
     end
 
+    def random_elements(count)
+      shuffle[0..(count - 1)]
+    end
+
     # Split an array of elements into a set of smaller arrays of equal size.
     # Extra elements are preferentially assigned to earlier arrays. If there
     # are no elements in a given returned array it will be [] (empty array)
@@ -672,6 +676,12 @@ class Random
   # Return boolean value based on integer _chance_.
   def self.chance(chance)
     rand(100) + 1 <= chance
+  end
+end
+
+class Numeric
+  def within?(value, precision=0.1)
+    (self - value).abs <= precision
   end
 end
 
