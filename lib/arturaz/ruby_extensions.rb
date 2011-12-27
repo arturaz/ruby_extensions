@@ -63,6 +63,9 @@ module Arturaz
     end
 
     def random_elements(count)
+      raise ArgumentError.new(
+        "Wanted to pick #{count} random elements but only #{size} si available!"
+      ) if count > size
       shuffle[0..(count - 1)]
     end
 
