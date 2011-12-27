@@ -650,6 +650,14 @@ class Time
   def drop_usec
     Time.at(to_i)
   end
+
+  def to_range(offset)
+    (self - offset)..(self + offset)
+  end
+
+  def within?(time, precision=1)
+    to_i.within?(time.to_i, precision)
+  end
 end
 
 class Object
