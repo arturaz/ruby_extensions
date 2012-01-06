@@ -476,7 +476,7 @@ module Arturaz
     #                                 bar must be true or false, baz has no
     #                                 type checking).
     #
-    # * <tt>:valid</tt>: these params are valid. ControllerArgumentError is raised
+    # * <tt>:valid</tt>: these params are valid. ArgumentError is raised
     #    if param not from this list is supplied.
     #
     # Raises ArgumentError if options fail.
@@ -515,7 +515,7 @@ module Arturaz
 
           raise ArgumentError.new(
             "#{param} should have been one of the #{types.inspect}, but was #{
-              self[param].class}"
+            self[param].class}"
           ) unless matched
         end
       end
