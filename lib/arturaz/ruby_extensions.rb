@@ -827,4 +827,23 @@ module Enumerable
   def accept!
     reject! { |item| ! yield(item) }
   end
+
+  # Recursively maps everything into single array.
+  #
+  #   source = [[1, 2, [3, 4, [5, 6], [7, 8]], 9, [10]], 11, [12, 13], 14, 15]
+  #   actual = source.deep_flat_map { |i| i - 1 }
+  #   actual.should == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+  #
+  def deep_flat_map
+    items = []
+    map = lambda do |array|
+      array.each do |item|
+        item.respond_to?(:each) ? map[item] : items << yield(item)
+      end
+    end
+
+    map[self]
+
+    items
+  end
 end

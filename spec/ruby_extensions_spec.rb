@@ -469,3 +469,13 @@ describe Object do
     end
   end
 end
+
+describe Enumerable do
+  describe "#deep_flat_map" do
+    it "should recursively map everything into single array" do
+      source = [[1, 2, [3, 4, [5, 6], [7, 8]], 9, [10]], 11, [12, 13], 14, 15]
+      actual = source.deep_flat_map { |i| i - 1 }
+      actual.should == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+    end
+  end
+end
