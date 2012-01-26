@@ -471,6 +471,14 @@ describe Object do
 end
 
 describe Enumerable do
+  describe "#compact_map" do
+    it "should return mapped enumerable without nil values" do
+      source = [1, 2, 3, 4, 5, 6]
+      actual = source.compact_map { |i| i % 2 == 0 ? i * 2 : nil }
+      actual.should == [4, 8, 12]
+    end
+  end
+
   describe "#deep_flat_map" do
     it "should recursively map everything into single array" do
       source = [[1, 2, [3, 4, [5, 6], [7, 8]], 9, [10]], 11, [12, 13], 14, 15]

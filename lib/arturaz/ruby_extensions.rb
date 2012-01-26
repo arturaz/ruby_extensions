@@ -828,11 +828,28 @@ module Enumerable
     reject! { |item| ! yield(item) }
   end
 
+  # Returns mapped enumerable without nil values. Same as
+  # enum.map(&block).compact, only faster.
+  #
+  #  source = [1, 2, 3, 4, 5, 6]
+  #  actual = source.compact_map { |i| i % 2 == 0 ? i * 2 : nil }
+  #  actual.should == [4, 8, 12]
+  #
+  def compact_map
+    items = []
+    each do |item|
+      mapped = yield item
+      items << mapped unless mapped.nil?
+    end
+
+    items
+  end
+
   # Recursively maps everything into single array.
   #
-  #   source = [[1, 2, [3, 4, [5, 6], [7, 8]], 9, [10]], 11, [12, 13], 14, 15]
-  #   actual = source.deep_flat_map { |i| i - 1 }
-  #   actual.should == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+  #  source = [[1, 2, [3, 4, [5, 6], [7, 8]], 9, [10]], 11, [12, 13], 14, 15]
+  #  actual = source.deep_flat_map { |i| i - 1 }
+  #  actual.should == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
   #
   def deep_flat_map
     items = []
