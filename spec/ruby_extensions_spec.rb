@@ -356,6 +356,15 @@ describe Hash do
     end
   end
 
+  describe "#map_keys" do
+    it "should map keys" do
+      source = {1 => 2, 3 => 4}
+      source.map_keys do |key, value|
+        key * 2
+      end.should == {2 => 2, 6 => 4}
+    end
+  end
+
   describe "#map_values" do
     it "should map values" do
       source = {1 => 2, 3 => 4}

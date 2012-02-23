@@ -442,6 +442,23 @@ module Arturaz
       end
     end
 
+    # Maps keys of +Hash+ returning new +Hash+ with it's keys mapped.
+    #
+    #   source = {1 => 2, 3 => 4}
+    #   source.map_keys do |key, value|
+    #     key * 2
+    #   end.should == {2 => 2, 6 => 4}
+    #
+    def map_keys
+      mapped = {}
+      each do |key, value|
+        new_key = yield key, value
+        mapped[new_key] = value
+      end
+
+      mapped
+    end
+
     # Maps values of +Hash+ returning new +Hash+ with it's values mapped.
     #
     #   source = {1 => 2, 3 => 4}
