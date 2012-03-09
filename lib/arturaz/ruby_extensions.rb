@@ -698,6 +698,10 @@ class Range
   def /(value)
     (first / value)..(last / value)
   end
+
+  def random_element
+    rand(first, last + 1)
+  end
 end
 
 class Random

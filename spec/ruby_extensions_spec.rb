@@ -496,3 +496,13 @@ describe Enumerable do
     end
   end
 end
+
+describe Range do
+  describe "#random_element" do
+    it "should return a number between range start and end" do
+      value = (5..10).random_element
+      value.should >= 5
+      value.should <= 10
+    end
+  end
+end
