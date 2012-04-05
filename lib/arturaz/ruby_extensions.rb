@@ -475,9 +475,9 @@ module Arturaz
     end
 
     # Return new +Hash+ with only keys from whitelist.
-    def only(*whitelist)
-      {}.tap do |h|
-        (keys & whitelist).each { |k| h[k] = self[k] }
+    def only(whitelist)
+      whitelist.each_with_object({}) do |key, hash|
+        hash[key] = self[key] if has_key?(key)
       end
     end
 
