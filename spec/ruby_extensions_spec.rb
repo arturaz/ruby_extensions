@@ -1,3 +1,4 @@
+# encoding: utf-8
 require File.dirname(__FILE__) + '/spec_helper'
 
 describe String do
@@ -353,6 +354,18 @@ describe Hash do
       end
 
       first.should == {:a => 10, :b => 5, :c => 25}
+    end
+  end
+
+  describe "#only" do
+    let(:hash) { {:a => 1, :b => 2, :c => 3} }
+
+    it "should support key array" do
+      hash.only([:a, :b]).should == {:a => 1, :b => 2}
+    end
+
+    it "should support multiple arguments" do
+      hash.only(:a, :b).should == {:a => 1, :b => 2}
     end
   end
 
