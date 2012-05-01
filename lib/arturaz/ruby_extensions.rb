@@ -474,6 +474,18 @@ module Arturaz
       mapped
     end
 
+    # Maps values of +Hash+ returning new +Hash+ with it's values mapped
+    # IN-PLACE.
+    #
+    #   source = {1 => 2, 3 => 4}
+    #   source.map_values! do |key, value|
+    #     value * 2
+    #   end
+    #   source.should == {1 => 4, 3 => 8}
+    def map_values!(&block)
+      replace map_values(&block)
+    end
+
     # Return new +Hash+ with only keys from whitelist.
     def only(*whitelist)
       whitelist.flatten.each_with_object({}) do |key, hash|

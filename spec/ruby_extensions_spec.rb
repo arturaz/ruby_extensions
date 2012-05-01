@@ -387,6 +387,16 @@ describe Hash do
     end
   end
 
+  describe "#map_values!" do
+    it "should map values in-place" do
+      source = {1 => 2, 3 => 4}
+      source.map_values! do |key, value|
+        value * 2
+      end
+      source.should == {1 => 4, 3 => 8}
+    end
+  end
+
   describe "#ensure_options!" do
     describe "requirements" do
       it "should raise ArgumentError if required param " +
